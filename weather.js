@@ -1,45 +1,44 @@
-// ---------- Settings (change these) ----------
+// ---------- Settings ----------
 const CONFIG = {
-  name: "Rancho Cucamonga", // placeholder: set your own
-  lat: 34.1064,
-  lon: -117.5931,
-  unit: "fahrenheit",       // or "celsius"
-  cacheMinutes: 10          // reloads within this window reuse saved data
+  name: "Upland",
+  lat: 34.10,
+  lon: -117.65,
+  unit: "fahrenheit",   // or "celsius"
+  cacheMinutes: 10      // reloads inside this window reuse saved data
 };
 
-// Direct from Open-Meteo for now (no API key). Later, swap this for the
-// Netlify function URL, e.g. "/.netlify/functions/weather".
-const buildUrl = () => "https://api.open-meteo.com/v1/forecast?" + new URLSearchParams({
+const params = (o) => new URLSearchParams(o);
+// Later these two can point at a Netlify function instead.
+const forecastUrl = () => "https://api.open-meteo.com/v1/forecast?" + params({
   latitude: CONFIG.lat, longitude: CONFIG.lon,
   current: "temperature_2m,weather_code,is_day",
-  hourly: "precipitation_probability",
+  hourly: "precipitation_probability,uv_index",
   daily: "temperature_2m_max,temperature_2m_min",
   temperature_unit: CONFIG.unit, timezone: "auto", forecast_days: 2
 });
+const airUrl = () => "https://air-quality-api.open-meteo.com/v1/air-quality?" + params({
+  latitude: CONFIG.lat, longitude: CONFIG.lon, current: "us_aqi", timezone: "auto"
+});
 
-// ---------- Cache (kept on the tablet so reloads are cheap) ----------
-const KEY = "weather-cache-v1";
+// ---------- Cache ----------
+const KEY = "weather-cache-v2";
 const readCache = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } };
-const writeCache = (data) => { try { localStorage.setItem(KEY, JSON.stringify({ savedAt: Date.now(), data })); } catch (e) {} };
+function writeCache(rec) { try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch (e) {} return rec; }
+async function getJson(url) { const r = await fetch(url); if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }
 
 async function loadWeather() {
-  const cached = readCache();
-  if (cached && Date.now() - cached.savedAt < CONFIG.cacheMinutes * 60000) {
-    return { data: cached.data, savedAt: cached.savedAt, stale: false };
-  }
+  const c = readCache();
+  if (c && Date.now() - c.savedAt < CONFIG.cacheMinutes * 60000) return { ...c, stale: false };
   try {
-    const res = await fetch(buildUrl());
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
-    writeCache(data);
-    return { data, savedAt: Date.now(), stale: false };
+    const [forecast, air] = await Promise.all([getJson(forecastUrl()), getJson(airUrl()).catch(() => null)]);
+    return { ...writeCache({ savedAt: Date.now(), forecast, air }), stale: false };
   } catch (err) {
-    if (cached) return { data: cached.data, savedAt: cached.savedAt, stale: true };
+    if (c) return { ...c, stale: true };
     throw err;
   }
 }
 
-// ---------- Weather codes (WMO) -> label + icon ----------
+// ---------- Labels ----------
 function describe(code) {
   if (code === 0) return ["Clear", "clear"];
   if (code === 1) return ["Mostly clear", "clear"];
@@ -54,7 +53,10 @@ function describe(code) {
   if (code >= 95) return ["Thunderstorm", "storm"];
   return ["Unknown", "cloud"];
 }
+const uvLabel = (v) => v < 3 ? "Low" : v < 6 ? "Moderate" : v < 8 ? "High" : v < 11 ? "Very high" : "Extreme";
+const aqiLabel = (v) => v <= 50 ? "Good" : v <= 100 ? "Moderate" : v <= 150 ? "Unhealthy for sensitive groups" : v <= 200 ? "Unhealthy" : v <= 300 ? "Very unhealthy" : "Hazardous";
 
+// ---------- Icons ----------
 const CLOUD = '<path class="line cloud" d="M20 38h26a9 9 0 0 0 .5-18 13 13 0 0 0-25-2A10 10 0 0 0 20 38z"/>';
 function sun(x, y, r) {
   let rays = "";
@@ -69,52 +71,86 @@ const DROPS = [26, 36, 46].map(x => `<line class="accent drop" x1="${x}" y1="43"
 const FLAKES = [26, 36, 46].map(x => `<circle class="accent drop" cx="${x}" cy="45" r="1.5"/>`).join("");
 const FOG = '<line class="line" x1="16" y1="44" x2="48" y2="44"/><line class="line" x1="22" y1="50" x2="54" y2="50"/>';
 const BOLT = '<path class="accent" d="M36 38l-6 9h7l-5 8"/>';
-
 function iconSvg(kind, isDay) {
-  let inner;
-  if (kind === "clear") inner = isDay ? sun(32, 28, 11) : MOON;
-  else if (kind === "partly") inner = (isDay ? sun(22, 18, 7) : '<g transform="translate(-14 -6) scale(.6)">' + MOON + "</g>") + CLOUD;
-  else if (kind === "cloud") inner = CLOUD;
-  else if (kind === "fog") inner = CLOUD + FOG;
-  else if (kind === "rain") inner = CLOUD + DROPS;
-  else if (kind === "snow") inner = CLOUD + FLAKES;
-  else inner = CLOUD + BOLT;
-  return `<svg class="ico" viewBox="0 0 64 56" aria-hidden="true">${inner}</svg>`;
+  let s;
+  if (kind === "clear") s = isDay ? sun(32, 28, 11) : MOON;
+  else if (kind === "partly") s = (isDay ? sun(22, 18, 7) : '<g transform="translate(-14 -6) scale(.6)">' + MOON + "</g>") + CLOUD;
+  else if (kind === "cloud") s = CLOUD;
+  else if (kind === "fog") s = CLOUD + FOG;
+  else if (kind === "rain") s = CLOUD + DROPS;
+  else if (kind === "snow") s = CLOUD + FLAKES;
+  else s = CLOUD + BOLT;
+  return `<svg class="ico" viewBox="0 0 64 56" aria-hidden="true">${s}</svg>`;
+}
+
+// ---------- Helpers ----------
+const $ = (id) => document.getElementById(id);
+const hourLabel = (iso) => { const h = parseInt(iso.slice(11, 13), 10); return (h % 12 || 12) + (h < 12 ? "a" : "p"); };
+function drawBars(barsEl, hoursEl, times, probs, start) {
+  barsEl.innerHTML = ""; if (hoursEl) hoursEl.innerHTML = "";
+  for (let i = start; i < start + 12 && i < times.length; i++) {
+    const b = document.createElement("i");
+    b.style.height = Math.max(6, probs[i]) + "%";
+    barsEl.appendChild(b);
+    if (hoursEl) { const s = document.createElement("span"); s.textContent = hourLabel(times[i]); hoursEl.appendChild(s); }
+  }
 }
 
 // ---------- Render ----------
-const $ = (id) => document.getElementById(id);
-const hourLabel = (iso) => { const h = parseInt(iso.slice(11, 13), 10); return (h % 12 || 12) + (h < 12 ? "a" : "p"); };
+function render(r) {
+  const f = r.forecast, cur = f.current;
+  const [label, kind] = describe(cur.weather_code);
+  const icon = iconSvg(kind, cur.is_day === 1);
+  const temp = Math.round(cur.temperature_2m) + "°";
+  const hi = Math.round(f.daily.temperature_2m_max[0]) + "°";
+  const lo = Math.round(f.daily.temperature_2m_min[0]) + "°";
+  const times = f.hourly.time, probs = f.hourly.precipitation_probability;
+  const start = Math.max(0, times.findIndex(t => t.startsWith(cur.time.slice(0, 13))));
 
-function render({ data, savedAt, stale }) {
-  const [label, kind] = describe(data.current.weather_code);
-  $("place").textContent = CONFIG.name;
-  $("icon").innerHTML = iconSvg(kind, data.current.is_day === 1);
-  $("cond").textContent = label;
-  $("temp").textContent = Math.round(data.current.temperature_2m) + "°";
-  $("hi").textContent = Math.round(data.daily.temperature_2m_max[0]) + "°";
-  $("lo").textContent = Math.round(data.daily.temperature_2m_min[0]) + "°";
+  // home card
+  $("hIcon").innerHTML = icon; $("hCond").textContent = label; $("hTemp").textContent = temp;
+  $("hHi").textContent = hi; $("hLo").textContent = lo;
+  drawBars($("hBars"), null, times, probs, start);
 
-  const times = data.hourly.time, probs = data.hourly.precipitation_probability;
-  const start = Math.max(0, times.findIndex(t => t.startsWith(data.current.time.slice(0, 13))));
-  const bars = $("bars"), hours = $("hours");
-  bars.innerHTML = ""; hours.innerHTML = "";
-  for (let i = start; i < start + 12 && i < times.length; i++) {
-    const bar = document.createElement("i");
-    bar.style.height = Math.max(6, probs[i]) + "%";
-    bar.title = probs[i] + "%";
-    bars.appendChild(bar);
-    const lab = document.createElement("span");
-    lab.textContent = hourLabel(times[i]);
-    hours.appendChild(lab);
-  }
+  // weather page
+  $("wPlace").textContent = CONFIG.name;
+  $("wIcon").innerHTML = icon; $("wCond").textContent = label; $("wTemp").textContent = temp;
+  $("wLo").textContent = lo; $("wNow").textContent = temp; $("wHi").textContent = hi;
+  drawBars($("wBars"), $("wHours"), times, probs, start);
 
-  const when = new Date(savedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  $("foot").textContent = stale ? "Can’t reach the weather service. Showing the update from " + when + "." : "Updated " + when;
-  $("status").hidden = true;
-  $("content").hidden = false;
+  const uv = Math.round(f.hourly.uv_index[start] || 0);
+  $("uv").textContent = uv; $("uvL").textContent = uvLabel(uv);
+  const aq = r.air && r.air.current ? r.air.current.us_aqi : null;
+  $("aqi").textContent = aq == null ? "–" : Math.round(aq);
+  $("aqiL").textContent = aq == null ? "Unavailable" : aqiLabel(aq);
+
+  const when = new Date(r.savedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  $("foot").textContent = r.stale ? "Can’t reach the weather service. Showing the update from " + when + "." : "Updated " + when;
 }
 
+// ---------- Clock ----------
+function tick() {
+  const d = new Date();
+  const t = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).match(/^(.*?)\s*([AP]M)?$/i);
+  $("time").innerHTML = t[1] + (t[2] ? "<small>" + t[2] + "</small>" : "");
+  $("date").textContent = d.toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+}
+tick(); setInterval(tick, 20000);
+
+// ---------- Pages (#weather = weather page) ----------
+function route() {
+  const w = location.hash === "#weather";
+  $("home").classList.toggle("on", !w);
+  $("weather").classList.toggle("on", w);
+}
+window.addEventListener("hashchange", route); route();
+
+// ---------- Reload button ----------
+$("reload").addEventListener("click", () => location.reload());
+
+// ---------- Go ----------
 loadWeather().then(render).catch(() => {
-  $("status").textContent = "Weather unavailable. Check Wi-Fi, then reload.";
+  $("hCond").textContent = "Weather unavailable";
+  $("wCond").textContent = "Weather unavailable";
+  $("foot").textContent = "Check Wi-Fi, then reload.";
 });

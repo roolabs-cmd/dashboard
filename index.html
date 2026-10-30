@@ -10,24 +10,61 @@
 :root{--bg:#1a1613;--card:#26201b;--text:#f1e9df;--muted:#a09386;--accent:#f0a24b}
 *{box-sizing:border-box;margin:0}
 html,body{height:100%}
-body{background:var(--bg);color:var(--text);font-family:"Outfit","Helvetica Neue",Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{width:min(94vw,560px);background:var(--card);border-radius:34px;padding:clamp(18px,4vw,30px)}
-.status{color:var(--muted);text-align:center;font-size:18px;padding:30px 0}
-.place{color:var(--muted);font-size:clamp(14px,2.4vw,17px);margin-bottom:6px}
-.main{display:flex;align-items:center;gap:clamp(10px,3vw,20px)}
-.icon{width:clamp(76px,18vw,110px);flex:none}
+body{background:var(--bg);color:var(--text);font-family:"Outfit","Helvetica Neue",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+.view{display:none;flex-direction:column;gap:14px;height:100%;max-width:640px;margin:0 auto;padding:clamp(14px,3vw,24px)}
+.view.on{display:flex}
+
+/* top bar */
+.top{display:flex;align-items:baseline;gap:12px;padding:0 6px}
+.time{font-size:clamp(52px,11vw,76px);font-weight:300;letter-spacing:-.03em;color:var(--accent);line-height:1}
+.time small{font-size:.32em;letter-spacing:0;margin-left:4px;color:var(--muted)}
+.date{font-size:clamp(15px,2.8vw,20px);color:var(--muted);flex:1}
+.reload{width:40px;height:40px;border-radius:50%;background:var(--card);align-self:center;display:grid;place-items:center}
+.reload svg,.back svg{width:20px;height:20px;stroke:var(--muted);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* home weather card */
+.wcard{display:block;background:var(--card);border-radius:30px;padding:14px 18px 12px}
+.row{display:flex;align-items:center;gap:12px}
+.icon{width:clamp(64px,15vw,92px);flex:none}
 .now{flex:1}
-.cond{color:var(--muted);font-size:clamp(16px,3vw,21px)}
-.temp{font-size:clamp(52px,12vw,84px);font-weight:300;letter-spacing:-.03em;line-height:1.05}
-.hl{text-align:right;color:var(--muted);font-size:clamp(15px,2.8vw,20px);line-height:1.6}
+.cond{color:var(--muted);font-size:clamp(15px,2.6vw,19px)}
+.temp{font-size:clamp(40px,9vw,60px);font-weight:300;letter-spacing:-.02em;line-height:1.05}
+.hl{text-align:right;color:var(--muted);font-size:clamp(14px,2.5vw,18px);line-height:1.5}
 .hl b{color:var(--text);font-weight:500}
-.cap{color:var(--muted);font-size:13px;margin-top:18px}
-.bars{display:flex;align-items:flex-end;gap:6px;height:64px;margin-top:8px}
+.bars{display:flex;align-items:flex-end;gap:5px;margin-top:10px}
 .bars i{flex:1;background:var(--accent);border-radius:99px;min-height:4px}
-.hours{display:flex;gap:6px;margin-top:6px;font-size:12px;color:var(--muted)}
+.mini{height:34px}.big{height:90px}
+.hours{display:flex;gap:5px;margin-top:6px;font-size:12px;color:var(--muted)}
 .hours span{flex:1;text-align:center}
-.foot{color:var(--muted);font-size:12px;margin-top:16px;text-align:right}
-/* icons */
+
+.brief{background:var(--accent);color:#1a1613;border-radius:99px;padding:14px 18px;text-align:center;font-size:clamp(15px,2.8vw,18px);font-weight:500}
+.tiles{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px;min-height:0}
+.tile{background:var(--card);border-radius:34px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.tile svg{width:clamp(40px,9vw,60px);height:clamp(40px,9vw,60px);stroke:var(--text);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.tile span{font-size:clamp(14px,2.6vw,18px);color:var(--muted)}
+
+/* weather page */
+.head{display:flex;align-items:center;gap:10px;padding:0 4px}
+.back{width:40px;height:40px;border-radius:50%;background:var(--card);display:grid;place-items:center}
+.place{font-size:clamp(18px,3.4vw,24px);font-weight:500}
+.hero{background:var(--card);border-radius:30px;padding:18px}
+.hero .icon{width:clamp(90px,22vw,130px)}
+.hero .temp{font-size:clamp(64px,15vw,96px)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.stat{background:var(--bg);border-radius:22px;padding:10px;text-align:center}
+.stat small{display:block;color:var(--muted);font-size:13px}
+.stat b{font-size:clamp(22px,5vw,30px);font-weight:400}
+.panel{background:var(--card);border-radius:30px;padding:16px 18px}
+.cap{color:var(--muted);font-size:13px}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.info{background:var(--card);border-radius:30px;padding:16px 18px}
+.info .v{font-size:clamp(34px,8vw,52px);font-weight:300;color:var(--accent);line-height:1.1;margin-top:4px}
+.info .l{color:var(--muted);font-size:clamp(14px,2.6vw,17px)}
+.foot{color:var(--muted);font-size:12px;text-align:center;margin-top:auto}
+
+/* weather icons */
 .ico{width:100%;height:auto;overflow:visible}
 .line{fill:none;stroke:var(--text);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .accent{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -42,20 +79,66 @@ body{background:var(--bg);color:var(--text);font-family:"Outfit","Helvetica Neue
 </style>
 </head>
 <body>
-<main class="card" aria-live="polite">
-  <p class="status" id="status">Loading weather…</p>
-  <div id="content" hidden>
-    <div class="place" id="place"></div>
-    <div class="main">
-      <div class="icon" id="icon"></div>
-      <div class="now"><div class="cond" id="cond"></div><div class="temp" id="temp"></div></div>
-      <div class="hl">High <b id="hi"></b><br>Low <b id="lo"></b></div>
-    </div>
-    <div class="cap">Chance of rain, next 12 hours</div>
-    <div class="bars" id="bars"></div>
-    <div class="hours" id="hours"></div>
-    <div class="foot" id="foot"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-cal" viewBox="0 0 48 48"><rect x="7" y="10" width="34" height="31" rx="7"/><path d="M7 20h34M16 6v8M32 6v8"/><circle cx="17" cy="29" r="1.2"/><circle cx="24" cy="29" r="1.2"/><circle cx="31" cy="29" r="1.2"/></symbol>
+  <symbol id="i-todo" viewBox="0 0 48 48"><circle cx="24" cy="24" r="17"/><path d="M16.5 24.5l5 5 10-11"/></symbol>
+  <symbol id="i-music" viewBox="0 0 48 48"><path d="M19 35V11l19-4v24"/><circle cx="14" cy="35" r="5"/><circle cx="33" cy="31" r="5"/></symbol>
+  <symbol id="i-ai" viewBox="0 0 48 48"><path d="M22 8c1 8 4 12 12 13-8 1-11 5-12 13-1-8-4-12-12-13 8-1 11-5 12-13z"/><path d="M37 28c.5 3.5 1.7 5 5 5.5-3.3.5-4.5 2-5 5.5-.5-3.5-1.7-5-5-5.5 3.3-.5 4.5-2 5-5.5z"/></symbol>
+</svg>
+
+<!-- HOME -->
+<main class="view on" id="home">
+  <div class="top">
+    <div class="time" id="time"></div>
+    <div class="date" id="date"></div>
+    <button class="reload" type="button" id="reload" aria-label="Reload">
+      <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4h-4"/></svg>
+    </button>
   </div>
+  <a class="wcard" href="#weather" aria-label="Open weather">
+    <div class="row">
+      <div class="icon" id="hIcon"></div>
+      <div class="now"><div class="cond" id="hCond">Loading…</div><div class="temp" id="hTemp"></div></div>
+      <div class="hl">High <b id="hHi">–</b><br>Low <b id="hLo">–</b></div>
+    </div>
+    <div class="bars mini" id="hBars"></div>
+  </a>
+  <button class="brief" type="button">Generate morning brief</button>
+  <div class="tiles">
+    <button class="tile" type="button"><svg aria-hidden="true"><use href="#i-cal"/></svg><span>Calendar</span></button>
+    <button class="tile" type="button"><svg aria-hidden="true"><use href="#i-todo"/></svg><span>To-do</span></button>
+    <button class="tile" type="button"><svg aria-hidden="true"><use href="#i-music"/></svg><span>Music</span></button>
+    <button class="tile" type="button"><svg aria-hidden="true"><use href="#i-ai"/></svg><span>AI</span></button>
+  </div>
+</main>
+
+<!-- WEATHER PAGE -->
+<main class="view" id="weather">
+  <div class="head">
+    <a class="back" href="#" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <div class="place" id="wPlace"></div>
+  </div>
+  <section class="hero">
+    <div class="row">
+      <div class="icon" id="wIcon"></div>
+      <div class="now"><div class="cond" id="wCond">Loading…</div><div class="temp" id="wTemp"></div></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><small>Low</small><b id="wLo">–</b></div>
+      <div class="stat"><small>Now</small><b id="wNow">–</b></div>
+      <div class="stat"><small>High</small><b id="wHi">–</b></div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="cap">Chance of rain, next 12 hours</div>
+    <div class="bars big" id="wBars"></div>
+    <div class="hours" id="wHours"></div>
+  </section>
+  <section class="duo">
+    <div class="info"><div class="l">UV index</div><div class="v" id="uv">–</div><div class="l" id="uvL"></div></div>
+    <div class="info"><div class="l">Air quality</div><div class="v" id="aqi">–</div><div class="l" id="aqiL"></div></div>
+  </section>
+  <div class="foot" id="foot"></div>
 </main>
 <script src="weather.js"></script>
 </body>
