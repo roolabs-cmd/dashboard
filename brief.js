@@ -17,7 +17,7 @@
     g("bDate").textContent = new Date(b.created_at).toLocaleString([], { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
     const box = g("bText"); box.innerHTML = "";
     b.text.split(/\n{2,}/).forEach((t) => { const p = document.createElement("p"); p.textContent = t.trim(); box.appendChild(p); });
-    g("bSrc").textContent = b.sources && b.sources.length ? "Sources searched: " + b.sources.join(", ") : "";
+    g("bSrc").textContent = b.sources && b.sources.length ? "Headlines from: " + b.sources.join(", ") : "";
     g("bTalk").hidden = false;
   }
   async function load(force) {
