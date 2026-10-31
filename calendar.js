@@ -210,4 +210,5 @@
   }
   function onRoute() { if (location.hash === "#calendar") { renderGrid(); init(); } }
   window.addEventListener("hashchange", onRoute); onRoute();
+  window.dashApi = api; window.dashToast = toast;
 })();

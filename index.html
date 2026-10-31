@@ -110,6 +110,11 @@ a{color:inherit;text-decoration:none}
 .lockp{background:var(--card);border-radius:30px;padding:24px;width:min(88vw,380px);display:flex;flex-direction:column;gap:14px}
 .lockp input{background:var(--bg);color:var(--text);border:0;border-radius:18px;padding:13px 16px;font:inherit;font-size:16px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--accent);color:#1a1613;padding:10px 18px;border-radius:99px;z-index:9;max-width:90vw;font-size:15px}
+/* brief */
+a.brief{display:block}
+.bcard{flex:1;overflow:auto}
+.btext{font-size:clamp(17px,3.4vw,22px);line-height:1.6;margin:10px 0}
+.btext p+p{margin-top:12px}
 </style>
 </head>
 <body>
@@ -137,7 +142,7 @@ a{color:inherit;text-decoration:none}
     </div>
     <div class="bars mini" id="hBars"></div>
   </a>
-  <button class="brief" type="button">Generate morning brief</button>
+  <a class="brief" id="briefPill" href="#brief">Generate morning brief</a>
   <div class="tiles">
     <a class="tile" href="#calendar"><svg aria-hidden="true"><use href="#i-cal"/></svg><span>Calendar</span></a>
     <button class="tile" type="button"><svg aria-hidden="true"><use href="#i-todo"/></svg><span>To-do</span></button>
@@ -221,12 +226,27 @@ a{color:inherit;text-decoration:none}
     </div>
     <div style="flex:1" id="sClose"></div>
   </div>
+</main>
+<!-- MORNING BRIEF -->
+<main class="view" id="brief">
+  <div class="head">
+    <a class="back" href="#" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <div class="place">Morning brief</div><div class="sp"></div>
+    <button class="ibtn" id="bRegen" type="button" aria-label="Regenerate"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v4h-4"/></svg></button>
+  </div>
+  <section class="panel bcard">
+    <div class="cap" id="bDate"></div>
+    <div class="btext" id="bText"></div>
+    <div class="cap" id="bSrc"></div>
+  </section>
+  <button class="brief" id="bTalk" type="button" hidden>Talk</button>
+</main>
   <div class="over lock" id="cLock" hidden>
     <div class="lockp"><div id="lockNote">Enter your dashboard passcode</div><input id="lockIn" type="password" autocomplete="off"><button class="brief" id="lockGo" type="button">Unlock</button></div>
   </div>
   <div class="toast" id="cMsg" hidden></div>
-</main>
 <script src="weather.js"></script>
 <script src="calendar.js"></script>
+<script src="brief.js"></script>
 </body>
 </html>
