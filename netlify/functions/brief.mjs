@@ -29,10 +29,38 @@ async function schedule(supa, tz, day) {
   })).sort((a, b) => a.ms - b.ms).map((x) => x.line);
 }
 
+const FEEDS = [
+  ["BBC News", "https://feeds.bbci.co.uk/news/rss.xml"],
+  ["NPR", "https://feeds.npr.org/1001/rss.xml"],
+  ["The Guardian", "https://www.theguardian.com/world/rss"],
+  ["Ars Technica", "https://feeds.arstechnica.com/arstechnica/index"],
+  ["BleepingComputer", "https://www.bleepingcomputer.com/feed/"]
+];
+const clean = (s) => s.replace(/<!\[CDATA\[|\]\]>/g, "").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim();
+
+// Optional override in Netlify: NEWS_FEEDS="Name|https://feed1,Name2|https://feed2"
+async function headlines() {
+  const feeds = process.env.NEWS_FEEDS
+    ? process.env.NEWS_FEEDS.split(",").map((x) => x.split("|").map((y) => y.trim())).filter((a) => a.length === 2 && a[1])
+    : FEEDS;
+  const results = await Promise.allSettled(feeds.map(async ([name, url]) => {
+    const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 4000);
+    try {
+      const xml = await (await fetch(url, { signal: ctl.signal, headers: { "user-agent": "wall-dashboard/1.0" } })).text();
+      const items = [...xml.matchAll(/<item[\s>][\s\S]*?<\/item>/g)].slice(0, 8)
+        .map((m) => { const t = m[0].match(/<title[^>]*>([\s\S]*?)<\/title>/); return t ? clean(t[1]) : ""; }).filter(Boolean);
+      if (!items.length) throw new Error("empty feed");
+      return { name, items };
+    } finally { clearTimeout(timer); }
+  }));
+  const ok = results.filter((r) => r.status === "fulfilled").map((r) => r.value);
+  return { outlets: ok.map((o) => o.name), text: ok.map((o) => `${o.name}:\n- ${o.items.join("\n- ")}`).join("\n\n") };
+}
+
 async function gemini(system, prompt) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY isn't set in Netlify");
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 24000);
   let res;
   try {
@@ -42,7 +70,6 @@ async function gemini(system, prompt) {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: system }] },
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        tools: [{ google_search: {} }],
         generationConfig: { temperature: 0.6, maxOutputTokens: 1500 }
       })
     });
@@ -55,9 +82,7 @@ async function gemini(system, prompt) {
   const cand = j.candidates && j.candidates[0];
   const text = ((cand && cand.content && cand.content.parts) || []).map((p) => p.text || "").join("").trim();
   if (!text) throw new Error("Gemini returned no text" + (cand && cand.finishReason ? " (" + cand.finishReason + ")" : ""));
-  const chunks = (cand.groundingMetadata && cand.groundingMetadata.groundingChunks) || [];
-  const sources = [...new Set(chunks.map((c) => c.web && c.web.title).filter(Boolean))].slice(0, 6);
-  return { text, sources };
+  return { text };
 }
 
 // POST {day:"YYYY-MM-DD", force?:true}. Returns today's saved brief unless force is set.
@@ -75,6 +100,7 @@ export default guard(async (req) => {
   const lat = Number(st ? st.latitude : 34.10), lon = Number(st ? st.longitude : -117.65);
   const unit = st ? st.temperature_unit : "fahrenheit", place = st ? st.location_name : "home";
 
+  const newsP = headlines();
   const w = await (await fetch("https://api.open-meteo.com/v1/forecast?" + new URLSearchParams({
     latitude: lat, longitude: lon, current: "temperature_2m,weather_code",
     daily: "temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max",
@@ -89,10 +115,12 @@ export default guard(async (req) => {
 
   const name = process.env.BRIEF_NAME ? ` for ${process.env.BRIEF_NAME}` : "";
   const focus = process.env.NEWS_FOCUS ? ` When choosing news, favor: ${process.env.NEWS_FOCUS}.` : "";
-  const system = `You write a short morning brief${name} that will be read aloud on a wall display. Write 130 to 180 words of plain spoken English: no markdown, no bullet points, no emoji, no headings. Order: a one-line greeting, today's weather, three or four of the biggest news stories from the last 24 hours (one short sentence each, naming the outlet, like "according to Reuters"), then today's schedule. Use only the weather and schedule facts given; never invent events. Find news with Google Search and use reputable outlets. If you can't find news, say so briefly instead of guessing. If the schedule is empty, say the day is clear.${focus}`;
-  const prompt = `Today is ${day}.\n\nWEATHER:\n${weather}\n\nSCHEDULE:\n${events}`;
+  const system = `You write a short morning brief${name} that will be read aloud on a wall display. Write 130 to 180 words of plain spoken English: no markdown, no bullet points, no emoji, no headings. Order: a one-line greeting, today's weather, three or four of the most important stories picked from the HEADLINES list (one short sentence each, naming the outlet, like "according to BBC News"), then today's schedule. Use only the facts given: for news, say only what a headline says and add no details of your own; never invent events. If no headlines are available, say so briefly. If the schedule is empty, say the day is clear.${focus}`;
+  const news = await newsP;
+  const prompt = `Today is ${day}.\n\nWEATHER:\n${weather}\n\nSCHEDULE:\n${events}\n\nHEADLINES (from news feeds):\n${news.text || "None available."}`;
 
-  const { text, sources } = await gemini(system, prompt);
+  const { text } = await gemini(system, prompt);
+  const sources = news.outlets;
   const row = { day, text, sources, created_at: new Date().toISOString() };
   const { error } = await supa.from("daily_brief").upsert(row);
   if (error) throw new Error("Couldn't save the brief: " + error.message);
