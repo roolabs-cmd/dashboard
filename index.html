@@ -76,6 +76,40 @@ a{color:inherit;text-decoration:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes fall{0%{transform:translateY(-4px);opacity:0}25%{opacity:1}100%{transform:translateY(10px);opacity:0}}
 @media (prefers-reduced-motion:reduce){.cloud,.sun,.drop{animation:none}.drop{opacity:1}}
+/* calendar */
+[hidden]{display:none!important}
+.cpanel{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0}
+.ibtn{width:40px;height:40px;border-radius:50%;background:var(--card);display:grid;place-items:center;flex:none}
+.ibtn svg{width:20px;height:20px;stroke:var(--muted);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.head .sp{flex:1}
+.busy{opacity:.5}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;color:var(--muted);font-size:13px}
+.mgrid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,1fr);gap:5px}
+.cell{background:var(--card);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px 2px;min-height:0}
+.cell b{font-weight:400;font-size:clamp(13px,3vw,18px);padding:0 7px;border-radius:99px;line-height:1.5}
+.cell.out{opacity:.35}
+.cell.today b{background:var(--accent);color:#1a1613;font-weight:500}
+.dots{display:flex;gap:3px;height:7px}
+.dots i,.ev>i,.srow i{width:7px;height:7px;border-radius:50%;flex:none}
+.dlist{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.ev{display:flex;gap:12px;align-items:flex-start;text-align:left;background:var(--card);border-radius:22px;padding:14px 16px}
+.ev>i{margin-top:8px;width:10px;height:10px}
+.et{font-size:clamp(16px,3vw,20px)}
+.ev .cap{margin-top:2px}.notes{white-space:pre-line;opacity:.8}
+.fields{overflow:auto;display:flex;flex-direction:column;gap:10px;flex:1}
+.fields input,.fields select,.fields textarea{background:var(--card);color:var(--text);border:0;border-radius:18px;padding:13px 16px;font:inherit;font-size:16px;color-scheme:dark;width:100%}
+.two{display:grid;grid-template-columns:1fr auto;gap:10px}
+.chk{display:flex;align-items:center;gap:10px;color:var(--muted);padding:0 6px}
+.chk input{width:20px;height:20px;accent-color:var(--accent)}
+.del{color:#e07a6a;padding:10px;text-align:center}
+.over{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:5;display:flex}
+.sidep{width:min(80vw,320px);background:var(--card);padding:22px 18px;display:flex;flex-direction:column;gap:12px;overflow:auto}
+.srow{display:flex;align-items:center;gap:12px;padding:8px 4px;font-size:17px}
+.srow input{width:20px;height:20px;accent-color:var(--accent)}
+.lock{align-items:center;justify-content:center}
+.lockp{background:var(--card);border-radius:30px;padding:24px;width:min(88vw,380px);display:flex;flex-direction:column;gap:14px}
+.lockp input{background:var(--bg);color:var(--text);border:0;border-radius:18px;padding:13px 16px;font:inherit;font-size:16px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--accent);color:#1a1613;padding:10px 18px;border-radius:99px;z-index:9;max-width:90vw;font-size:15px}
 </style>
 </head>
 <body>
@@ -105,7 +139,7 @@ a{color:inherit;text-decoration:none}
   </a>
   <button class="brief" type="button">Generate morning brief</button>
   <div class="tiles">
-    <button class="tile" type="button"><svg aria-hidden="true"><use href="#i-cal"/></svg><span>Calendar</span></button>
+    <a class="tile" href="#calendar"><svg aria-hidden="true"><use href="#i-cal"/></svg><span>Calendar</span></a>
     <button class="tile" type="button"><svg aria-hidden="true"><use href="#i-todo"/></svg><span>To-do</span></button>
     <button class="tile" type="button"><svg aria-hidden="true"><use href="#i-music"/></svg><span>Music</span></button>
     <button class="tile" type="button"><svg aria-hidden="true"><use href="#i-ai"/></svg><span>AI</span></button>
@@ -140,6 +174,59 @@ a{color:inherit;text-decoration:none}
   </section>
   <div class="foot" id="foot"></div>
 </main>
+<!-- CALENDAR -->
+<main class="view" id="calendar">
+  <div class="cpanel" id="cGrid">
+    <div class="head">
+      <a class="back" href="#" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></a>
+      <button class="ibtn" id="cMenu" type="button" aria-label="Calendars"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div class="place" id="cTitle"></div><div class="sp"></div>
+      <button class="ibtn" id="cPrev" type="button" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button class="ibtn" id="cNext" type="button" aria-label="Next month"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+      <button class="ibtn" id="cAdd" type="button" aria-label="Add event"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+    <div class="dow"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+    <div class="mgrid" id="mGrid"></div>
+  </div>
+  <div class="cpanel" id="cDay" hidden>
+    <div class="head">
+      <button class="ibtn" id="dBack" type="button" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="place" id="dTitle"></div><div class="sp"></div>
+      <button class="ibtn" id="dAdd" type="button" aria-label="Add event"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+    <div class="dlist" id="dList"></div>
+  </div>
+  <div class="cpanel" id="cForm" hidden>
+    <div class="head">
+      <button class="ibtn" id="fBack" type="button" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="place" id="fHead">New event</div>
+    </div>
+    <div class="fields">
+      <input id="fTitle" placeholder="Title" autocomplete="off">
+      <select id="fCal"></select>
+      <label class="chk"><input type="checkbox" id="fAll"> All day</label>
+      <div class="two"><input type="date" id="fSd"><input type="time" id="fSt"></div>
+      <div class="two"><input type="date" id="fEd"><input type="time" id="fEt"></div>
+      <input id="fLoc" placeholder="Location" autocomplete="off">
+      <textarea id="fNotes" rows="3" placeholder="Notes"></textarea>
+    </div>
+    <button class="brief" id="fSave" type="button">Save</button>
+    <button class="del" id="fDel" type="button">Delete</button>
+  </div>
+  <div class="over" id="cSide" hidden>
+    <div class="sidep">
+      <div class="place">Calendars</div>
+      <div id="sList"></div>
+      <button class="ibtn" id="sPass" type="button" style="margin-top:auto;width:auto;border-radius:99px;padding:0 16px;color:var(--muted);font-size:14px;background:var(--bg)">Change passcode</button>
+    </div>
+    <div style="flex:1" id="sClose"></div>
+  </div>
+  <div class="over lock" id="cLock" hidden>
+    <div class="lockp"><div id="lockNote">Enter your dashboard passcode</div><input id="lockIn" type="password" autocomplete="off"><button class="brief" id="lockGo" type="button">Unlock</button></div>
+  </div>
+  <div class="toast" id="cMsg" hidden></div>
+</main>
 <script src="weather.js"></script>
+<script src="calendar.js"></script>
 </body>
 </html>
