@@ -115,6 +115,20 @@ a.brief{display:block}
 .bcard{flex:1;overflow:auto}
 .btext{font-size:clamp(17px,3.4vw,22px);line-height:1.6;margin:10px 0}
 .btext p+p{margin-top:12px}
+/* todo */
+.ptitle{display:flex;align-items:center;gap:6px;font-size:clamp(18px,3.4vw,24px);font-weight:500}
+.ptitle svg{width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.task{display:flex;align-items:center;gap:6px;background:var(--card);border-radius:22px;padding:4px 16px 4px 6px;transition:opacity .25s,transform .25s}
+.task.done{opacity:0;transform:translateX(24px)}
+.chk{width:48px;height:48px;flex:none;display:grid;place-items:center}
+.chk i{width:24px;height:24px;border:2px solid var(--muted);border-radius:50%}
+.tbody{flex:1;text-align:left;padding:10px 0;min-width:0}
+.cap.late{color:var(--accent)}
+.pitem{display:block;width:100%;text-align:left;padding:12px 8px;font-size:18px;border-radius:14px}
+.pitem.on{color:var(--accent)}
+.chips{display:flex;gap:8px}
+.chips button{background:var(--card);border-radius:99px;padding:8px 14px;font-size:14px;color:var(--muted)}
+.toast button{margin-left:12px;font-weight:600;text-decoration:underline}
 </style>
 </head>
 <body>
@@ -145,7 +159,7 @@ a.brief{display:block}
   <a class="brief" id="briefPill" href="#brief">Generate morning brief</a>
   <div class="tiles">
     <a class="tile" href="#calendar"><svg aria-hidden="true"><use href="#i-cal"/></svg><span>Calendar</span></a>
-    <button class="tile" type="button"><svg aria-hidden="true"><use href="#i-todo"/></svg><span>To-do</span></button>
+    <a class="tile" href="#todo"><svg aria-hidden="true"><use href="#i-todo"/></svg><span>To-do</span></a>
     <button class="tile" type="button"><svg aria-hidden="true"><use href="#i-music"/></svg><span>Music</span></button>
     <button class="tile" type="button"><svg aria-hidden="true"><use href="#i-ai"/></svg><span>AI</span></button>
   </div>
@@ -227,6 +241,35 @@ a.brief{display:block}
     <div style="flex:1" id="sClose"></div>
   </div>
 </main>
+<!-- TO-DO -->
+<main class="view" id="todo">
+  <div class="cpanel" id="tListP">
+    <div class="head">
+      <a class="back" href="#" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></a>
+      <button class="ptitle" id="tTitle" type="button"><span id="tName">Tasks</span><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg></button>
+      <div class="sp"></div>
+      <button class="ibtn" id="tAdd" type="button" aria-label="Add task"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+    <div class="dlist" id="tList"></div>
+  </div>
+  <div class="cpanel" id="tFormP" hidden>
+    <div class="head">
+      <button class="ibtn" id="tfBack" type="button" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <div class="place" id="tfHead">New task</div>
+    </div>
+    <div class="fields">
+      <input id="tfTitle" placeholder="Task" autocomplete="off">
+      <select id="tfProj"></select>
+      <input type="date" id="tfDue">
+      <div class="chips"><button id="tfToday" type="button">Today</button><button id="tfTomorrow" type="button">Tomorrow</button><button id="tfNone" type="button">No date</button></div>
+      <textarea id="tfNotes" rows="3" placeholder="Notes"></textarea>
+    </div>
+    <button class="brief" id="tfSave" type="button">Save</button>
+    <button class="del" id="tfDel" type="button">Delete</button>
+  </div>
+  <div class="over lock" id="tPick" hidden><div class="lockp"><div class="place">Projects</div><div id="pList"></div></div></div>
+  <div class="toast" id="tSnack" hidden><span id="tSnackT"></span><button id="tUndo" type="button">Undo</button></div>
+</main>
 <!-- MORNING BRIEF -->
 <main class="view" id="brief">
   <div class="head">
@@ -248,5 +291,6 @@ a.brief{display:block}
 <script src="weather.js"></script>
 <script src="calendar.js"></script>
 <script src="brief.js"></script>
+<script src="todo.js"></script>
 </body>
 </html>
